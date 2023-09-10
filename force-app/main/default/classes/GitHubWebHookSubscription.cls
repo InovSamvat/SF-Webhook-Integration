@@ -1,6 +1,6 @@
 @RestResource(urlMapping='/webhooks')
 global with sharing class GitHubWebHookSubscription {
-	@HttpPost
+    @HttpPost
     global static void handlePush() {
         try{
             RestRequest req = RestContext.request;
@@ -16,6 +16,8 @@ global with sharing class GitHubWebHookSubscription {
             if(hashVal == macString)
             {
                 System.debug('request1:: '+req.requestBody.toString());
+                RequestBody gitNotif = (RequestBody)JSON.deserialize(reqBody.toString(), RequestBody.class);
+                System.debug('request2:: '+gitNotif);
                 res.statusCode = 200;
                 res.responseBody = Blob.valueOf(JSON.serialize(new ResponseBody('Success','Notification Received')));
             }
@@ -36,5 +38,29 @@ global with sharing class GitHubWebHookSubscription {
             response = resp;
             message = msg;
         }
+    }
+    
+    public class RequestBody {
+        List<CommitBody> commits; 
+        RepoDetail repository;
+    }
+    
+    public class CommitBody {
+        CommitterDetail committer; 
+        String timestamp;
+        String url;
+        List<String> added;
+        List<String> removed;
+        List<String> modified;
+    }
+    
+    public class CommitterDetail {
+        String name; 
+        String email;
+    }
+    
+    public class RepoDetail {
+        String name; 
+        String url;
     }
 }
