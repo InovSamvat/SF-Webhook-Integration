@@ -1,66 +1,101 @@
 @RestResource(urlMapping='/webhooks')
 global with sharing class GitHubWebHookSubscription {
+    @TestVisible private static final String HEADERSIGN = 'X-Hub-Signature-256';
+    @TestVisible private static final String SHA = 'sha256=';
+    @TestVisible private static final String HMACSHA = 'hmacSHA256';
+    @TestVisible private static final String PASS = Git_Secret__c.getOrgDefaults().Secret__c;
+    @TestVisible private static final String SUCCESSTXT = 'Success';
+    @TestVisible private static final String FAIL = 'Failure';
+    @TestVisible private static final String MSG = 'Notification Received';
+    @TestVisible private static final String INVALIDMSG = 'Invalid Subscription';
+        
     @HttpPost
     global static void handlePush() {
+        RestRequest req = RestContext.request;
+        RestResponse res = RestContext.response;
         try{
-            RestRequest req = RestContext.request;
-            RestResponse res = RestContext.response;
-            
-            String hashVal = req.headers.get('X-Hub-Signature-256');
+            String hashVal = req.headers.get(HEADERSIGN);
             Blob reqBody = req.requestBody;
-            Blob macVal = Crypto.generateMac('hmacSHA256', reqBody, Blob.valueOf('secret765@gitRepo'));
-            String macString = 'sha256='+EncodingUtil.convertToHex(macVal);
-            System.debug('macString:: '+macString);
-            System.debug('hashVal:: '+hashVal);
-            
+            Blob macVal = Crypto.generateMac(HMACSHA, reqBody, Blob.valueOf(PASS));
+            String macString = SHA + EncodingUtil.convertToHex(macVal);
+            System.debug('strmac:: '+macString);
             if(hashVal == macString)
             {
-                System.debug('request1:: '+req.requestBody.toString());
                 RequestBody gitNotif = (RequestBody)JSON.deserialize(reqBody.toString(), RequestBody.class);
-                System.debug('request2:: '+gitNotif);
+                insertNotif(gitNotif);
                 res.statusCode = 200;
-                res.responseBody = Blob.valueOf(JSON.serialize(new ResponseBody('Success','Notification Received')));
+                res.responseBody = Blob.valueOf(JSON.serialize(new ResponseBody(SUCCESSTXT, MSG)));
             }
             else
             {
                 res.statusCode = 401;
-                res.responseBody = Blob.valueOf(JSON.serialize(new ResponseBody('Failure','Invalid Subscription')));
+                res.responseBody = Blob.valueOf(JSON.serialize(new ResponseBody(FAIL, INVALIDMSG)));
             }
         } catch(Exception ex){
+            res.statusCode = 401;
+            res.responseBody = Blob.valueOf(JSON.serialize(new ResponseBody(FAIL,ex.getMessage())));
             System.debug('Some Exception:: '+ex.getMessage());
         }
     }
     
+    public static void insertNotif(RequestBody gitNotif){
+        List<Github_Notification__c> notifRecs = new List<Github_Notification__c>();
+        
+        for(CommitBody cb: gitNotif.commits)
+        {
+            Github_Notification__c notifRec = new Github_Notification__c();
+            String modifiedComp = cb?.modified?.size()>0?String.join(cb?.modified,';;'):null;
+            String removedComp = cb?.removed?.size()>0?String.join(cb?.removed,';;'):null;
+            String addedComp = cb?.added?.size()>0?String.join(cb?.added,';;'):null;
+            
+            notifRec.Repository_Name__c = gitNotif?.repository?.name;
+            notifRec.Email__c = cb?.committer?.email;
+            notifRec.Committer__c = cb?.committer?.name;
+            notifRec.Message__c = cb?.message;
+            notifRec.Modified_Component__c = modifiedComp;
+            notifRec.Removed_Component__c = removedComp;
+            notifRec.Added_Component__c = addedComp;
+            notifRec.Timestamp__c = cb?.timestamp;
+            notifRec.URL__c = cb?.url;
+            
+            notifRecs.add(notifRec);
+        }
+        
+        insert notifRecs;
+        
+    }
+    
     public class ResponseBody{
-        String response;
-        String message;
-        public ResponseBody(String resp, String msg){
+        @TestVisible String response;
+        @TestVisible String message;
+        @TestVisible public ResponseBody(String resp, String msg){
             response = resp;
             message = msg;
         }
     }
     
     public class RequestBody {
-        List<CommitBody> commits; 
-        RepoDetail repository;
+        @TestVisible List<CommitBody> commits; 
+        @TestVisible RepoDetail repository;
     }
     
     public class CommitBody {
-        CommitterDetail committer; 
-        String timestamp;
-        String url;
-        List<String> added;
-        List<String> removed;
-        List<String> modified;
+        @TestVisible CommitterDetail committer; 
+        @TestVisible String timestamp;
+        @TestVisible String url;
+        @TestVisible String message;
+        @TestVisible List<String> added;
+        @TestVisible List<String> removed;
+        @TestVisible List<String> modified;
     }
     
     public class CommitterDetail {
-        String name; 
-        String email;
+        @TestVisible String name; 
+        @TestVisible String email;
     }
     
     public class RepoDetail {
-        String name; 
-        String url;
+        @TestVisible String name; 
+        @TestVisible String url;
     }
 }
