@@ -1,18 +1,18 @@
-# Salesforce DX Project: Next Steps
+# Salesforce Webhook Integration with GitHub
 
-Now that you’ve created a Salesforce DX project, what’s next? Here are some documentation resources to get you started.
+This project implements an integration between Salesforce and GitHub. 
 
-## How Do You Plan to Deploy Your Changes?
+## Post Deployment Steps:
 
-Do you want to deploy a set of changes, or create a self-contained application? Choose a [development model](https://developer.salesforce.com/tools/vscode/en/user-guide/development-models).
+- Create a Sites in Salesforce with name "gitHubWebHook"
+- Store the Secret value under Custom setting "Git_Secret__c.Secret__c"
 
-## Configure Your Salesforce DX Project
+## Configure Your GitHUb
 
-The `sfdx-project.json` file contains useful configuration information for your project. See [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm) in the _Salesforce DX Developer Guide_ for details about this file.
+- Create a Webhook under repository settings
+- Set Payload URL as <Salesforce Sites URL>/services/apexrest/webhooks
+- Set Secret value same as stored in Salesforce Custom setting "Git_Secret__c.Secret__c"
 
-## Read All About It
+## How to Test?
 
-- [Salesforce Extensions Documentation](https://developer.salesforce.com/tools/vscode/)
-- [Salesforce CLI Setup Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_intro.htm)
-- [Salesforce DX Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm)
-- [Salesforce CLI Command Reference](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference.htm)
+Push the commits to your GitHub repository and verify the records created in Salesforce under "Github Notification" tab
